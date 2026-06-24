@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+gitenv/
+venv/
+pyvenv*/
+.env/
+.venv/
+
+# Environment files
+.env
+
+# Test / cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Temporary folders
+temp_repo/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
