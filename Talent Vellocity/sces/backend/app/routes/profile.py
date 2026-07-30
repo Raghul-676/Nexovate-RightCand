@@ -64,10 +64,13 @@ def get_my_stats(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    from app.services.coding_service import fetch_leetcode, fetch_codeforces, fetch_github
+    from app.services.coding_service import sync_student_coding_stats, fetch_leetcode, fetch_codeforces, fetch_github
     profile = db.query(CodingProfile).filter(CodingProfile.user_id == current_user.id).first()
     if not profile:
         raise HTTPException(404, "Profile not set up yet")
+
+    # Sync statistics to the database
+    sync_student_coding_stats(current_user.id, db)
 
     stats, errors = {}, []
 
@@ -90,3 +93,4 @@ def get_my_stats(
             errors.append({"platform": "github", "error": str(e)})
 
     return {"stats": stats, "errors": errors}
+

@@ -222,4 +222,3 @@ MIT License — Free to use and modify.
 
 ---
 
-**Built with ❤️ using FastAPI + React**

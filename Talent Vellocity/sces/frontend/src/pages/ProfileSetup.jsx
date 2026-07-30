@@ -33,55 +33,58 @@ export default function ProfileSetup() {
   const platforms = [
     { key: 'leetcode_username', label: 'LeetCode Username', icon: '🟡', placeholder: 'e.g. john_doe', color: '#ffa116' },
     { key: 'codeforces_handle', label: 'Codeforces Handle', icon: '🔵', placeholder: 'e.g. tourist', color: '#3b82f6' },
-    { key: 'github_username', label: 'GitHub Username', icon: '⚫', placeholder: 'e.g. torvalds', color: '#4ade80' },
+    { key: 'github_username', label: 'GitHub Username', icon: '⚫', placeholder: 'e.g. torvalds', color: '#10b981' },
   ]
 
   return (
     <div className="auth-wrapper">
-      <div className="card" style={{ width: '100%', maxWidth: '480px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>💻</div>
-          <h2 style={{ fontSize: '1.6rem', fontWeight: 800, background: 'linear-gradient(135deg, #fff, var(--primary-light))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+      <img src="/sece_logo.png" alt="Sri Eshwar College of Engineering" className="auth-logo" />
+
+      <div className="glass-card">
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '0.25rem' }}>
             Set Up Your Profile
           </h2>
-          <p style={{ color: 'var(--muted)', fontSize: '0.88rem', marginTop: '0.4rem' }}>
-            Hi <strong style={{ color: 'var(--primary-light)' }}>{user?.username}</strong>! Link your coding accounts below.
+          <p style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
+            Hi <strong style={{ color: 'var(--primary)' }}>{user?.username}</strong>! Link your coding accounts below.
           </p>
         </div>
 
         <form onSubmit={handleSubmit}>
           {platforms.map(({ key, label, icon, placeholder, color }) => (
             <div className="form-group" key={key}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', fontWeight: 700 }}>
                 <span>{icon}</span> {label}
               </label>
               <input
                 {...f(key)}
                 placeholder={placeholder}
-                style={{ borderLeft: `3px solid ${color}` }}
+                style={{ borderLeft: `3px solid ${color}`, borderRadius: '9999px' }}
               />
             </div>
           ))}
 
-          {error && <p className="error-msg">{error}</p>}
+          {error && <p className="error-msg" style={{ textAlign: 'center' }}>{error}</p>}
 
-          <button
-            type="submit"
-            className="btn-primary"
-            disabled={saving}
-            style={{ width: '100%', padding: '0.85rem', marginTop: '1.25rem', fontSize: '1rem' }}
-          >
-            {saving ? 'Saving...' : 'Save & Continue →'}
-          </button>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1.5rem' }}>
+            <button
+              type="button"
+              className="btn-outline"
+              onClick={() => { logout(); navigate('/login') }}
+              style={{ width: '100%' }}
+            >
+              Logout
+            </button>
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={saving}
+              style={{ width: '100%' }}
+            >
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+          </div>
         </form>
-
-        <button
-          className="btn-outline"
-          style={{ width: '100%', marginTop: '0.75rem' }}
-          onClick={() => { logout(); navigate('/login') }}
-        >
-          Logout
-        </button>
       </div>
     </div>
   )

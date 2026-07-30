@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
@@ -41,3 +41,48 @@ class ProjectRepo(Base):
     analysed_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User")
+
+
+class CodingStats(Base):
+    __tablename__ = "coding_stats"
+    student_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    leetcode_solved = Column(Integer, default=0)
+    leetcode_hard_solved = Column(Integer, default=0)
+    leetcode_rating = Column(Integer, default=0)
+    leetcode_contests = Column(Integer, default=0)
+    codeforces_rating = Column(Integer, default=0)
+    codeforces_contests = Column(Integer, default=0)
+    last_active_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+
+
+class RepoAnalysis(Base):
+    __tablename__ = "repo_analysis"
+    repo_id = Column(Integer, ForeignKey("project_repos.id"), primary_key=True)
+    categories = Column(String, nullable=True)  # JSON string (list of strings)
+    complexity_score = Column(Integer, default=0)
+    analyzed_at = Column(DateTime, default=datetime.utcnow)
+
+    repo = relationship("ProjectRepo")
+
+
+class DomainScore(Base):
+    __tablename__ = "domain_scores"
+    student_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    domain = Column(String, primary_key=True)
+    domain_score = Column(Integer, default=0)
+    project_count = Column(Integer, default=0)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User")
+
+
+class LeaderboardWeights(Base):
+    __tablename__ = "leaderboard_weights"
+    id = Column(Integer, primary_key=True, index=True)
+    coding_weight = Column(Float, default=0.6)
+    domain_weight = Column(Float, default=0.4)
+    recency_halflife_days = Column(Integer, default=90)
+    updated_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

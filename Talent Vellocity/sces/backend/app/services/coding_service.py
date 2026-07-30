@@ -51,6 +51,7 @@ def fetch_leetcode(username: str) -> dict:
         # Consistency — unique active days in last 20 submissions
         recent = data.get("recentAcSubmissionList") or []
         active_days = len({int(s["timestamp"]) // 86400 for s in recent})
+        last_active_ts = int(recent[0]["timestamp"]) if recent else None
 
         return {
             "username": user["username"],
@@ -64,6 +65,7 @@ def fetch_leetcode(username: str) -> dict:
             "global_ranking": contest.get("globalRanking", 0),
             "topic_breakdown": top_topics,
             "active_days_last20": active_days,
+            "last_active_ts": last_active_ts,
         }
     except HTTPException:
         raise
@@ -125,6 +127,19 @@ def fetch_codeforces(handle: str) -> dict:
         except Exception:
             pass
 
+        # Contest count (from rating history)
+        contests_attended = 0
+        try:
+            rating_r = requests.get(f"https://codeforces.com/api/user.rating?handle={handle}", timeout=10)
+            if rating_r.status_code == 200:
+                contests_attended = len(rating_r.json().get("result", []))
+        except Exception:
+            pass
+
+        cf_last_active = None
+        if subs:
+            cf_last_active = subs[0].get("creationTimeSeconds")
+
         return {
             "handle": u.get("handle"),
             "rating": u.get("rating", 0),
@@ -136,6 +151,8 @@ def fetch_codeforces(handle: str) -> dict:
             "topic_breakdown": top_topics,
             "rating_distribution": dict(sorted(rating_dist.items(), key=lambda x: int(x[0]))),
             "active_days_last100": active_days,
+            "contests_attended": contests_attended,
+            "last_active_ts": cf_last_active,
         }
     except HTTPException:
         raise
@@ -167,7 +184,19 @@ def fetch_github(username: str) -> dict:
                 from datetime import datetime, timezone, timedelta
                 cutoff = datetime.now(timezone.utc) - timedelta(days=30)
                 push_days = set()
-                for ev in ev_r.json():
+                gh_last_active = None
+                push_days = set()
+                evs = ev_r.json()
+                if evs:
+                    try:
+                        created_str = evs[0].get("created_at")
+                        if created_str:
+                            from datetime import datetime, timezone
+                            dt = datetime.fromisoformat(created_str.replace("Z", "+00:00"))
+                            gh_last_active = int(dt.timestamp())
+                    except:
+                        pass
+                for ev in evs:
                     if ev.get("type") == "PushEvent":
                         created = datetime.fromisoformat(ev["created_at"].replace("Z", "+00:00"))
                         if created >= cutoff:
@@ -185,6 +214,7 @@ def fetch_github(username: str) -> dict:
             "following": d.get("following", 0),
             "profile_url": d.get("html_url"),
             "active_days_last30": active_days,
+            "last_active_ts": gh_last_active,
         }
     except HTTPException:
         raise
@@ -197,9 +227,91 @@ def compute_talent_score(lc: dict, cf: dict, gh: dict) -> int:
     if lc:
         score += min(lc.get("total_solved", 0) // 5, 30)
         score += min(lc.get("hard_solved", 0) * 2, 20)
-        score += min(lc.get("contest_rating", 0) // 100, 20)
+        
+        # Rating reliability increases with contest count
+        lc_contests = lc.get("contests_attended")
+        if not lc_contests:
+            lc_contests = 0
+        if lc_contests < 15:
+            trust = lc_contests / 15
+        else:
+            trust = 1.0
+        
+        rating_score = min(lc.get("contest_rating", 0) // 100, 20)
+        score += rating_score * trust
     if cf:
-        score += min(cf.get("rating", 0) // 100, 20)
+        # Rating reliability increases with contest count
+        cf_contests = cf.get("contests_attended")
+        if not cf_contests:
+            cf_contests = 0
+        if cf_contests < 15:
+            trust = cf_contests / 15
+        else:
+            trust = 1.0
+            
+        rating_score = min(cf.get("rating", 0) // 100, 20)
+        score += rating_score * trust
     if gh:
         score += min(gh.get("public_repos", 0) * 2, 10)
-    return min(score, 100)
+    return min(round(score), 100)
+
+
+def sync_student_coding_stats(user_id: int, db):
+    from app.models.models import CodingProfile, CodingStats
+
+    
+    profile = db.query(CodingProfile).filter(CodingProfile.user_id == user_id).first()
+    if not profile:
+        return None
+
+    stats = db.query(CodingStats).filter(CodingStats.student_id == user_id).first()
+    if not stats:
+        stats = CodingStats(student_id=user_id)
+        db.add(stats)
+
+    lc, cf, gh = {}, {}, {}
+    timestamps = []
+
+    # Fetch Leetcode
+    if profile.leetcode_username:
+        try:
+            lc = fetch_leetcode(profile.leetcode_username)
+            stats.leetcode_solved = lc.get("total_solved", 0)
+            stats.leetcode_hard_solved = lc.get("hard_solved", 0)
+            stats.leetcode_rating = lc.get("contest_rating", 0)
+            stats.leetcode_contests = lc.get("contests_attended", 0)
+            if lc.get("last_active_ts"):
+                timestamps.append(lc["last_active_ts"])
+        except Exception:
+            pass
+
+    # Fetch Codeforces
+    if profile.codeforces_handle:
+        try:
+            cf = fetch_codeforces(profile.codeforces_handle)
+            stats.codeforces_rating = cf.get("rating", 0)
+            stats.codeforces_contests = cf.get("contests_attended", 0)
+            if cf.get("last_active_ts"):
+                timestamps.append(cf["last_active_ts"])
+        except Exception:
+            pass
+
+    # Fetch GitHub
+    if profile.github_username:
+        try:
+            gh = fetch_github(profile.github_username)
+            if gh.get("last_active_ts"):
+                timestamps.append(gh["last_active_ts"])
+        except Exception:
+            pass
+
+    # Compute last_active_at
+    if timestamps:
+        latest_ts = max(timestamps)
+        stats.last_active_at = datetime.utcfromtimestamp(latest_ts)
+    else:
+        stats.last_active_at = profile.updated_at or datetime.utcnow()
+
+    db.commit()
+    db.refresh(stats)
+    return stats

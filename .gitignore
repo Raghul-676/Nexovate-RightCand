@@ -2,29 +2,75 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Virtual environments
-gitenv/
+# Virtual Environments
 venv/
-pyvenv*/
-.env/
 .venv/
+env/
+.env/
+gitenv/
+ENV/
+pyvenv*/
 
-# Environment files
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+dist/
+tmp/
+.eslintcache
+
+# Local Databases (SQLite, etc.)
+*.db
+*.sqlite
+*.sqlite3
+sces.db
+
+# Environment and Secrets
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
 
-# Test / cache
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
+# IDE / Editor Settings
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
 
-# Temporary folders
-temp_repo/
-
-# OS
+# OS Files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Logs
+# Logs and Temp
 *.log
-
+temp_repo/

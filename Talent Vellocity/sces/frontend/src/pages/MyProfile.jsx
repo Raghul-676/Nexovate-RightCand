@@ -6,27 +6,26 @@ import { useAuth } from '../services/AuthContext'
 const platforms = [
   { key: 'leetcode_username', label: 'LeetCode Username', icon: '🟡', placeholder: 'e.g. john_doe', color: '#ffa116' },
   { key: 'codeforces_handle', label: 'Codeforces Handle', icon: '🔵', placeholder: 'e.g. tourist', color: '#3b82f6' },
-  { key: 'github_username', label: 'GitHub Username', icon: '⚫', placeholder: 'e.g. torvalds', color: '#4ade80' },
+  { key: 'github_username', label: 'GitHub Username', icon: '⚫', placeholder: 'e.g. torvalds', color: '#10b981' },
 ]
 
-const COMPLEXITY_COLOR = { Advanced: '#f87171', Intermediate: '#fbbf24', Beginner: '#4ade80' }
+const COMPLEXITY_COLOR = { Advanced: '#ef4444', Intermediate: '#f59e0b', Beginner: '#10b981' }
 
-const CF_RATING_COLORS = {
-  '800': '#94a3b8', '1000': '#4ade80', '1200': '#4ade80', '1400': '#60a5fa',
-  '1600': '#60a5fa', '1800': '#a78bfa', '2000': '#f59e0b', '2200': '#f87171',
-  '2400': '#ef4444', '2600': '#ef4444',
-}
-
-// ── Radar Chart (pure SVG, no library) ──────────────────────────────────────
+// ── SVG Radar Chart (DSA Topic Capability) ──
 function RadarChart({ data }) {
   if (!data || Object.keys(data).length === 0) return (
-    <p style={{ color: 'var(--muted)', fontSize: '0.82rem', textAlign: 'center', padding: '1rem' }}>No topic data</p>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '180px', color: 'var(--muted)' }}>
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginBottom: '0.5rem' }}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18m9-9H3" />
+      </svg>
+      <span style={{ fontSize: '0.8rem' }}>No capability stats loaded</span>
+    </div>
   )
   const labels = Object.keys(data)
   const values = Object.values(data)
   const max = Math.max(...values, 1)
   const n = labels.length
-  const cx = 130, cy = 130, r = 100
+  const cx = 130, cy = 130, r = 90
   const levels = 4
 
   const angle = (i) => (Math.PI * 2 * i) / n - Math.PI / 2
@@ -45,12 +44,12 @@ function RadarChart({ data }) {
   const dataPolygon = dataPoints.map(p => `${p.x},${p.y}`).join(' ')
 
   const labelPoints = labels.map((label, i) => {
-    const p = point(i, 1.22)
+    const p = point(i, 1.2)
     return { label, x: p.x, y: p.y }
   })
 
   return (
-    <div className="radar-wrap">
+    <div className="radar-wrap" style={{ marginTop: '0.5rem' }}>
       <svg viewBox="0 0 260 260">
         {gridPolygons.map((pts, i) => (
           <polygon key={i} className="radar-grid" points={pts} />
@@ -61,11 +60,11 @@ function RadarChart({ data }) {
         })}
         <polygon className="radar-polygon" points={dataPolygon} />
         {dataPoints.map((p, i) => (
-          <circle key={i} className="radar-dot" cx={p.x} cy={p.y} r={3} />
+          <circle key={i} className="radar-dot" cx={p.x} cy={p.y} r={4} />
         ))}
         {labelPoints.map(({ label, x, y }, i) => (
           <text key={i} className="radar-label" x={x} y={y} textAnchor="middle" dominantBaseline="middle">
-            {label.length > 10 ? label.slice(0, 9) + '…' : label}
+            {label.length > 12 ? label.slice(0, 11) + '…' : label}
           </text>
         ))}
       </svg>
@@ -73,16 +72,16 @@ function RadarChart({ data }) {
   )
 }
 
-// ── Consistency Ring ─────────────────────────────────────────────────────────
+// ── SVG Consistency Ring ──
 function ConsistencyRing({ value, max, label, color }) {
   const r = 36, circ = 2 * Math.PI * r
   const ratio = Math.min(value / (max || 1), 1)
   const offset = circ * (1 - ratio)
   return (
     <div className="consistency-ring">
-      <svg width="90" height="90" viewBox="0 0 90 90">
-        <circle className="ring-bg" cx="45" cy="45" r={r} />
-        <circle className="ring-fill" cx="45" cy="45" r={r}
+      <svg width="100" height="100" viewBox="0 0 100 100">
+        <circle className="ring-bg" cx="50" cy="50" r={r} />
+        <circle className="ring-fill" cx="50" cy="50" r={r}
           stroke={color}
           strokeDasharray={circ}
           strokeDashoffset={offset}
@@ -96,101 +95,104 @@ function ConsistencyRing({ value, max, label, color }) {
   )
 }
 
-// ── CF Rating Distribution ───────────────────────────────────────────────────
-function RatingDistribution({ dist }) {
-  if (!dist || Object.keys(dist).length === 0) return (
-    <p style={{ color: 'var(--muted)', fontSize: '0.82rem' }}>No solved problems data</p>
-  )
-  const max = Math.max(...Object.values(dist), 1)
-  return (
-    <div>
-      {Object.entries(dist).map(([rating, count]) => (
-        <div key={rating} className="rating-bar-row">
-          <span className="rating-bar-label">{rating}</span>
-          <div className="rating-bar-track">
-            <div className="rating-bar-fill"
-              style={{ width: `${(count / max) * 100}%`, background: CF_RATING_COLORS[rating] || '#6366f1' }}
-            />
-          </div>
-          <span className="rating-bar-count">{count}</span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-// ── Stack Bar ────────────────────────────────────────────────────────────────
-function StackBar({ label, pct }) {
-  const filled = Math.round((pct / 100) * 20)
-  const empty = 20 - filled
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', marginBottom: '0.3rem' }}>
-      <span style={{ width: '120px', color: 'var(--muted2)', flexShrink: 0 }}>{label}</span>
-      <span style={{ color: '#60a5fa', letterSpacing: '-1px' }}>{'█'.repeat(filled)}{'░'.repeat(empty)}</span>
-      <span style={{ color: 'var(--muted)', minWidth: '36px' }}>{pct}%</span>
-    </div>
-  )
-}
-
-// ── Project Card ─────────────────────────────────────────────────────────────
 function ProjectCard({ repo }) {
   const stack = (() => { try { return JSON.parse(repo.stack_breakdown || '{}') } catch { return {} } })()
   const color = COMPLEXITY_COLOR[repo.complexity] || '#94a3b8'
   return (
-    <div className="card" style={{ borderTop: `2px solid ${color}`, marginBottom: '1rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.6rem' }}>
+    <div className="card" style={{ borderTop: `4px solid ${color}`, position: 'relative' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
         <div>
-          <div style={{ fontWeight: 700, fontSize: '1rem' }}>{repo.project_name || 'Unknown'}</div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: '0.2rem', wordBreak: 'break-all' }}>{repo.repo_url}</div>
+          <h4 style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text)' }}>{repo.project_name || 'Project'}</h4>
+          <span style={{ fontSize: '0.75rem', color: 'var(--muted)', wordBreak: 'break-all' }}>{repo.repo_url}</span>
         </div>
-        <span style={{ background: color + '22', color, border: `1px solid ${color}`, borderRadius: '6px', padding: '0.2rem 0.6rem', fontSize: '0.78rem', fontWeight: 700, flexShrink: 0, marginLeft: '0.75rem' }}>
-          {repo.complexity || '—'}
+        <span style={{ background: color + '15', color, border: `1px solid ${color}40`, borderRadius: '6px', padding: '0.2rem 0.5rem', fontSize: '0.72rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
+          {repo.complexity}
         </span>
       </div>
-      {repo.summary && <p style={{ fontSize: '0.82rem', color: 'var(--muted2)', marginBottom: '0.75rem', lineHeight: 1.5 }}>{repo.summary}</p>}
+
+      {repo.summary && (
+        <p style={{ fontSize: '0.84rem', color: 'var(--muted2)', marginBottom: '1rem', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
+          {repo.summary}
+        </p>
+      )}
+
+      {/* Tech Stack Chips */}
       {Object.keys(stack).length > 0 && (
-        <div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.4rem' }}>Tech Stack</div>
-          {Object.entries(stack).map(([k, v]) => <StackBar key={k} label={k} pct={v} />)}
+        <div style={{ marginBottom: '1rem' }}>
+          <div style={{ fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.4rem', fontWeight: 600 }}>Detected Stack</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+            {Object.keys(stack).map(tech => (
+              <span key={tech} className="badge badge-blue" style={{ fontSize: '0.68rem', padding: '0.15rem 0.5rem' }}>
+                {tech}
+              </span>
+            ))}
+          </div>
         </div>
       )}
+
+      {/* Grounded / Evidence Verification Badge */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border)' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '16px', height: '16px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </span>
+        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--success)' }} title="This analysis is backed by verifiable code snippet citations extracted from the repository.">
+          Evidence-based
+        </span>
+      </div>
     </div>
   )
 }
 
-// ── Main Component ────────────────────────────────────────────────────────────
 export default function MyProfile() {
   const [form, setForm] = useState({ leetcode_username: '', codeforces_handle: '', github_username: '' })
   const [stats, setStats] = useState(null)
   const [statsErrors, setStatsErrors] = useState([])
+  const [repoList, setRepoList] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadingStats, setLoadingStats] = useState(false)
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
-  const [repoInput, setRepoInput] = useState('')
-  const [repoList, setRepoList] = useState([])
-  const [analysing, setAnalysing] = useState(false)
-  const [repoError, setRepoError] = useState('')
+  const [redirecting, setRedirecting] = useState(false)
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
+    // Load student profile handles
     api.get('/profile/me')
-      .then(({ data }) => setForm({
-        leetcode_username: data.leetcode_username || '',
-        codeforces_handle: data.codeforces_handle || '',
-        github_username: data.github_username || '',
-      }))
+      .then(({ data }) => {
+        setForm({
+          leetcode_username: data.leetcode_username || '',
+          codeforces_handle: data.codeforces_handle || '',
+          github_username: data.github_username || '',
+        })
+      })
       .catch(() => {})
       .finally(() => setLoading(false))
-    api.get('/projects/my-repos').then(({ data }) => setRepoList(data)).catch(() => {})
+
+    // Load analyzed repositories
+    api.get('/projects/my-repos')
+      .then(({ data }) => setRepoList(data))
+      .catch(() => {})
+
+    // Load coding stats automatically on mount if linked
+    api.get('/profile/my-stats')
+      .then(({ data }) => {
+        setStats(data.stats)
+        setStatsErrors(data.errors || [])
+      })
+      .catch(() => {})
   }, [])
 
   const fetchStats = () => {
     setLoadingStats(true); setStatsErrors([])
     api.get('/profile/my-stats')
-      .then(({ data }) => { setStats(data.stats); setStatsErrors(data.errors || []) })
+      .then(({ data }) => {
+        setStats(data.stats)
+        setStatsErrors(data.errors || [])
+      })
       .catch(() => setStatsErrors([{ platform: 'all', error: 'Failed to load stats' }]))
       .finally(() => setLoadingStats(false))
   }
@@ -199,208 +201,199 @@ export default function MyProfile() {
     e.preventDefault(); setError(''); setSuccess(''); setSaving(true)
     try {
       await api.put('/profile/update', form)
-      setSuccess('Profile updated!'); setTimeout(() => setSuccess(''), 3000); setStats(null)
+      setSuccess('Profile credentials updated!'); setTimeout(() => setSuccess(''), 3000); setStats(null)
     } catch (err) { setError(err.response?.data?.detail || 'Update failed') }
     finally { setSaving(false) }
   }
 
-  const handleAnalyseRepos = async () => {
-    const urls = repoInput.split('\n').map(u => u.trim()).filter(Boolean)
-    if (!urls.length) return
-    setRepoError(''); setAnalysing(true)
-    try {
-      const { data } = await api.post('/projects/analyse', { repo_urls: urls })
-      setRepoList(prev => {
-        const seen = new Set(data.map(r => r.repo_url))
-        return [...prev.filter(r => !seen.has(r.repo_url)), ...data]
-      })
-      setRepoInput('')
-    } catch (err) { setRepoError(err.response?.data?.detail || 'Analysis failed') }
-    finally { setAnalysing(false) }
+  const handleHandoff = () => {
+    setRedirecting(true)
+    setTimeout(() => {
+      window.location.href = 'http://localhost:5174'
+    }, 2000)
   }
-
-  const f = (key) => ({ value: form[key], onChange: (e) => setForm({ ...form, [key]: e.target.value }) })
 
   const lc = stats?.leetcode
   const cf = stats?.codeforces
   const gh = stats?.github
 
-  // Consistency score: average of active days across platforms (0-100)
+  // Consistency Score variables
   const lcDays = lc?.active_days_last20 || 0
   const cfDays = cf?.active_days_last100 || 0
   const ghDays = gh?.active_days_last30 || 0
 
   return (
-    <div>
-      <nav className="navbar">
-        <span className="brand">⚡ CodeTracker</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <span style={{ color: 'var(--muted2)', fontSize: '0.88rem' }}>👤 {user?.username}</span>
-          <button className="btn-outline" style={{ padding: '0.35rem 0.9rem' }} onClick={() => { logout(); navigate('/login') }}>Logout</button>
+    <div style={{ background: 'var(--bg)', minHeight: '100vh' }}>
+      {/* ── Transition handoff screen ── */}
+      {redirecting && (
+        <div className="transition-overlay">
+          <div style={{ textAlign: 'center' }}>
+            <img src="/sece_logo.png" alt="SECE Logo" style={{ height: '70px', marginBottom: '2rem', filter: 'brightness(0) invert(1)' }} />
+            <h2 style={{ fontSize: '1.6rem', fontWeight: 700, marginBottom: '0.75rem' }}>Redirecting to AI Interview Preparation Assistant...</h2>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', marginBottom: '2rem' }}>Launching multi-agent interview preparation scorecard</p>
+            <div className="loading" style={{ margin: '0 auto' }} />
+          </div>
         </div>
+      )}
+
+      {/* ── Navbar ── */}
+      <nav className="navbar">
+        <div className="brand">
+          <img src="/sece_logo.png" alt="Sri Eshwar College of Engineering" />
+        </div>
+        <nav>
+          <a onClick={() => navigate('/my-profile')} className="active" style={{ cursor: 'pointer' }}>Profile</a>
+          <a onClick={() => navigate('/project-analysis')} style={{ cursor: 'pointer' }}>Projects</a>
+          {user?.role === 'admin' && <a onClick={() => navigate('/admin/dashboard')} style={{ cursor: 'pointer' }}>Admin</a>}
+          
+          <button className="btn-accent" onClick={handleHandoff} style={{ padding: '0.45rem 1.1rem', fontSize: '0.85rem' }}>
+            🎯 AI Interview Prep
+          </button>
+          <button className="btn-outline" onClick={() => { logout(); navigate('/login') }} style={{ padding: '0.45rem 1.1rem', fontSize: '0.85rem' }}>
+            Logout
+          </button>
+        </nav>
       </nav>
 
-      <div className="page" style={{ maxWidth: '960px' }}>
-        <h1 className="page-title">My Coding Profile</h1>
+      <div className="page" style={{ maxWidth: '1040px' }}>
+        
+        {/* ── Profile Header Block ── */}
+        <div className="card" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+          <div style={{
+            width: '64px', height: '64px', borderRadius: '16px',
+            background: 'linear-gradient(135deg, var(--primary), var(--primary-light))',
+            display: 'flex', alignItems: 'center', justifycenter: 'center', justifyContent: 'center',
+            fontSize: '1.6rem', fontWeight: 800, color: '#fff', boxShadow: '0 8px 24px rgba(11,78,162,0.2)'
+          }}>
+            {user?.username ? user.username[0].toUpperCase() : 'S'}
+          </div>
+          <div style={{ flex: 1, minWidth: '200px' }}>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text)' }}>{user?.username}</h2>
+            <p style={{ color: 'var(--muted)', fontSize: '0.84rem', marginTop: '0.15rem' }}>Sri Eshwar Registered Student Profile</p>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {form.leetcode_username && <span className="badge badge-orange">🟡 Leetcode: {form.leetcode_username}</span>}
+            {form.codeforces_handle && <span className="badge badge-blue">🔵 Codeforces: {form.codeforces_handle}</span>}
+            {form.github_username && <span className="badge badge-green">🟢 GitHub: {form.github_username}</span>}
+          </div>
+        </div>
 
-        {/* ── Top grid: form + stats ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', alignItems: 'start' }} className="profile-grid">
-
+        {/* ── Top grid: Credentials update + Stats refresh ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '1.5rem', alignItems: 'start', marginBottom: '1.5rem' }} className="profile-grid">
+          
+          {/* Form */}
           <div className="card">
-            <h3 style={{ fontWeight: 700, marginBottom: '1.25rem', fontSize: '0.85rem', color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Linked Accounts</h3>
-            {loading ? <div className="loading" style={{ padding: '2rem' }} /> : (
+            <h3 style={{ fontWeight: 700, marginBottom: '1.25rem', fontSize: '0.85rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Linked Accounts</h3>
+            {loading ? <div className="loading" style={{ padding: '1rem' }} /> : (
               <form onSubmit={handleSave}>
                 {platforms.map(({ key, label, icon, placeholder, color }) => (
                   <div className="form-group" key={key}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>{icon} {label}</label>
-                    <input {...f(key)} placeholder={placeholder} style={{ borderLeft: `3px solid ${color}` }} />
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary-dark)' }}>
+                      {icon} {label}
+                    </label>
+
+                    <input
+                      value={form[key]}
+                      onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                      placeholder={placeholder}
+                      style={{ borderLeft: `3px solid ${color}`, borderRadius: '9999px' }}
+                    />
                   </div>
                 ))}
                 {error && <p className="error-msg">{error}</p>}
                 {success && <p className="success-msg">✓ {success}</p>}
-                <button type="submit" className="btn-primary" disabled={saving} style={{ width: '100%', padding: '0.8rem', marginTop: '1rem' }}>
-                  {saving ? 'Saving...' : 'Update Profile'}
+                <button type="submit" className="btn-primary" disabled={saving} style={{ width: '100%', marginTop: '1rem' }}>
+                  {saving ? 'Saving...' : 'Update Links'}
                 </button>
               </form>
             )}
           </div>
 
-          <div>
-            <div className="card" style={{ marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Live Stats</h3>
-                <button className="btn-accent" onClick={fetchStats} disabled={loadingStats} style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}>
-                  {loadingStats ? 'Loading...' : stats ? '↻ Refresh' : '▶ Load Stats'}
-                </button>
-              </div>
-              {!stats && !loadingStats && <p style={{ color: 'var(--muted)', fontSize: '0.88rem', marginTop: '1rem' }}>Click "Load Stats" to fetch your live coding stats.</p>}
-              {loadingStats && <div className="loading" style={{ padding: '2rem' }} />}
-              {statsErrors.length > 0 && <p className="error-msg" style={{ marginTop: '0.75rem' }}>Failed: {statsErrors.map(e => e.platform).join(', ')}</p>}
+          {/* Stats triggers */}
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between', minHeight: '310px' }}>
+            <div>
+              <h3 style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>Evaluation Metrics</h3>
+              <p style={{ fontSize: '0.84rem', color: 'var(--muted2)', lineHeight: 1.5 }}>
+                Sync and compile stats across your LeetCode, Codeforces, and GitHub profiles. Re-evaluates consistency metrics, active days streaks, and DSA capabilities dynamically.
+              </p>
             </div>
-
-            {/* Basic stat rows */}
-            {stats && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {lc && (
-                  <div className="platform-card lc">
-                    <div className="platform-name" style={{ color: '#ffa116' }}>🟡 LeetCode — {lc.username}</div>
-                    {[['Total Solved', lc.total_solved], ['Easy / Med / Hard', `${lc.easy_solved} / ${lc.medium_solved} / ${lc.hard_solved}`],
-                      ['Contest Rating', lc.contest_rating], ['Global Rank', lc.ranking || '—']].map(([k, v]) => (
-                      <div className="stat-row" key={k}><span>{k}</span><span>{v}</span></div>
-                    ))}
-                  </div>
-                )}
-                {cf && (
-                  <div className="platform-card cf">
-                    <div className="platform-name" style={{ color: '#60a5fa' }}>🔵 Codeforces — {cf.handle}</div>
-                    {[['Rating', cf.rating], ['Max Rating', cf.max_rating], ['Rank', cf.rank], ['Total Solved', cf.total_solved || '—']].map(([k, v]) => (
-                      <div className="stat-row" key={k}><span>{k}</span><span>{v}</span></div>
-                    ))}
-                  </div>
-                )}
-                {gh && (
-                  <div className="platform-card gh">
-                    <div className="platform-name" style={{ color: '#4ade80' }}>⚫ GitHub — {gh.username}</div>
-                    {[['Public Repos', gh.public_repos], ['Followers', gh.followers]].map(([k, v]) => (
-                      <div className="stat-row" key={k}><span>{k}</span><span>{v}</span></div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+            
+            <div style={{ marginTop: '1.5rem' }}>
+              {loadingStats ? <div className="loading" style={{ padding: '1rem' }} /> : (
+                <button className="btn-accent" onClick={fetchStats} disabled={loadingStats} style={{ width: '100%' }}>
+                  {stats ? '↻ Refresh Coding Stats' : '▶ Pull Live Metrics'}
+                </button>
+              )}
+              {statsErrors.length > 0 && (
+                <p className="error-msg" style={{ marginTop: '0.5rem', fontSize: '0.78rem' }}>
+                  Sync issues on: {statsErrors.map(e => e.platform).join(', ')}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* ── Deep Analytics (shown after stats loaded) ── */}
+        {/* ── Second row: Radar Chart & Consistency Rings ── */}
         {stats && (
-          <div style={{ marginTop: '2rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }} className="profile-grid">
+            
+            {/* Radar chart */}
+            <div className="card" style={{ textAlign: 'center' }}>
+              <h3 style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
+                Topic Capability (DSA Spectrum)
+              </h3>
+              <RadarChart data={stats.topics} />
+            </div>
 
-            {/* LeetCode Topic Radar */}
-            {lc?.topic_breakdown && Object.keys(lc.topic_breakdown).length > 0 && (
-              <div className="card">
-                <h3 style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
-                  🟡 LC Topic Breakdown
-                </h3>
-                <RadarChart data={lc.topic_breakdown} />
-                <div style={{ marginTop: '0.75rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                  {Object.entries(lc.topic_breakdown).map(([topic, count]) => (
-                    <span key={topic} style={{ background: 'rgba(255,166,22,0.1)', border: '1px solid rgba(255,166,22,0.25)', color: '#ffa116', borderRadius: '999px', padding: '0.15rem 0.6rem', fontSize: '0.72rem' }}>
-                      {topic} · {count}
-                    </span>
-                  ))}
-                </div>
+            {/* Consistency indicators */}
+            <div className="card">
+              <h3 style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1.5rem' }}>
+                Consistency Metrics
+              </h3>
+              <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                <ConsistencyRing value={lcDays} max={20} label="LeetCode" color="#ffa116" />
+                <ConsistencyRing value={cfDays} max={100} label="Codeforces" color="#3b82f6" />
+                <ConsistencyRing value={ghDays} max={30} label="GitHub" color="#10b981" />
               </div>
-            )}
-
-            {/* Codeforces Topic Radar */}
-            {cf?.topic_breakdown && Object.keys(cf.topic_breakdown).length > 0 && (
-              <div className="card">
-                <h3 style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
-                  🔵 CF Topic Breakdown
-                </h3>
-                <RadarChart data={cf.topic_breakdown} />
-                <div style={{ marginTop: '0.75rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                  {Object.entries(cf.topic_breakdown).map(([topic, count]) => (
-                    <span key={topic} style={{ background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.25)', color: '#60a5fa', borderRadius: '999px', padding: '0.15rem 0.6rem', fontSize: '0.72rem' }}>
-                      {topic} · {count}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Codeforces Rating Distribution */}
-            {cf?.rating_distribution && Object.keys(cf.rating_distribution).length > 0 && (
-              <div className="card">
-                <h3 style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
-                  🔵 CF Problems by Rating
-                </h3>
-                <RatingDistribution dist={cf.rating_distribution} />
-              </div>
-            )}
-
-            {/* Consistency Score */}
-            {(lc || cf || gh) && (lcDays > 0 || cfDays > 0 || ghDays > 0) && (
-              <div className="card">
-                <h3 style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1.25rem' }}>
-                  ⚡ Consistency
-                </h3>
-                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'space-around', flexWrap: 'wrap' }}>
-                  {lc && <ConsistencyRing value={lcDays} max={20} label="LC days" color="#ffa116" />}
-                  {cf && cfDays > 0 && <ConsistencyRing value={cfDays} max={30} label="CF days" color="#60a5fa" />}
-                  {gh && ghDays > 0 && <ConsistencyRing value={ghDays} max={30} label="GH days" color="#4ade80" />}
-                </div>
-                <p style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: '1rem', textAlign: 'center' }}>
-                  Active coding days in recent submissions
-                </p>
-              </div>
-            )}
+              <p style={{ color: 'var(--muted)', fontSize: '0.78rem', marginTop: '1.5rem', textAlign: 'center', lineHeight: 1.4 }}>
+                Active streak counts representing your code contribution, commits, and submissions over recent periods.
+              </p>
+            </div>
           </div>
         )}
 
-        {/* ── Project Repo Analysis ── */}
-        <div style={{ marginTop: '2.5rem' }}>
-          <h2 style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '1.25rem' }}>🔍 Project Repository Analysis</h2>
-          <div className="card" style={{ marginBottom: '1.5rem' }}>
-            <h3 style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>Add GitHub Repo URLs</h3>
-            <p style={{ fontSize: '0.83rem', color: 'var(--muted)', marginBottom: '0.75rem' }}>One URL per line. Each repo is cloned, analysed, and its tech stack + complexity shown below.</p>
-            <textarea value={repoInput} onChange={e => setRepoInput(e.target.value)}
-              placeholder={`https://github.com/user/repo1\nhttps://github.com/user/repo2`}
-              rows={4} style={{ width: '100%', resize: 'vertical', fontFamily: 'monospace', fontSize: '0.85rem', padding: '0.6rem', boxSizing: 'border-box' }} />
-            {repoError && <p className="error-msg" style={{ marginTop: '0.5rem' }}>{repoError}</p>}
-            <button className="btn-primary" onClick={handleAnalyseRepos} disabled={analysing || !repoInput.trim()} style={{ marginTop: '0.75rem', padding: '0.7rem 1.5rem' }}>
-              {analysing ? '⏳ Analysing... (may take a minute per repo)' : '▶ Load Repo Stats'}
-            </button>
+        {/* ── Third Row: Coding Stats Cards ── */}
+        {stats && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }} className="profile-grid">
+            <div className="stat-card">
+              <div className="value">{lc?.total_solved || 0}</div>
+              <div className="label">LeetCode Solved</div>
+            </div>
+            <div className="stat-card">
+              <div className="value">{cf?.rating || 0}</div>
+              <div className="label">Codeforces Rating</div>
+            </div>
+            <div className="stat-card">
+              <div className="value">{repoList.length}</div>
+              <div className="label">Repos Analyzed</div>
+            </div>
           </div>
-          {repoList.length > 0 && (
-            <div>
-              <h3 style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
-                Analysed Projects ({repoList.length})
-              </h3>
+        )}
+
+        {/* ── Fourth Row: Analyzed Projects Grid ── */}
+        <div>
+          <h2 style={{ fontWeight: 800, fontSize: '1.25rem', color: '#FFFFFF', marginBottom: '1rem', textShadow: '0 2px 4px rgba(0,0,0,0.15)' }}>🔍 Analyzed Portfolios</h2>
+          {repoList.length > 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
               {repoList.map(repo => <ProjectCard key={repo.id} repo={repo} />)}
+            </div>
+          ) : (
+            <div className="card" style={{ padding: '2rem', textAlign: 'center' }}>
+              <p style={{ color: 'var(--muted)', fontSize: '0.88rem' }}>No projects analyzed yet. Head over to the Projects tab to add repositories.</p>
             </div>
           )}
         </div>
+
       </div>
     </div>
   )

@@ -5,6 +5,7 @@ import { useAuth } from '../services/AuthContext'
 
 export default function Login() {
   const [form, setForm] = useState({ username: '', password: '' })
+  const [selectedRole, setSelectedRole] = useState('student')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
@@ -16,12 +17,21 @@ export default function Login() {
     setLoading(true)
     try {
       const { data } = await api.post('/auth/login', form)
+      
+      // Basic check to ensure student vs admin role selector alignment
+      if (selectedRole === 'admin' && data.role !== 'admin') {
+        throw new Error('Access denied. Logged in user does not have Admin privileges.')
+      }
+      if (selectedRole === 'student' && data.role === 'admin') {
+        throw new Error('Access denied. Please use the Admin tab to log in as an administrator.')
+      }
+
       login(data.access_token, { username: data.username, role: data.role, profile_setup_done: data.profile_setup_done })
       if (data.role === 'admin') navigate('/admin/dashboard')
       else if (!data.profile_setup_done) navigate('/profile-setup')
       else navigate('/my-profile')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Login failed')
+      setError(err.message || err.response?.data?.detail || 'Login failed')
     } finally {
       setLoading(false)
     }
@@ -29,26 +39,43 @@ export default function Login() {
 
   return (
     <div className="auth-wrapper">
-      <div className="card auth-card">
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>⚡</div>
-          <h2>Welcome back</h2>
-          <p>Sign in to your Coding Profile Tracker</p>
+      <img src="/sece_logo.png" alt="Sri Eshwar College of Engineering" className="auth-logo" />
+      
+      <div className="glass-card">
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '0.25rem' }}>RightCand</h2>
+          <p style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>Student Centralized Evaluation System</p>
+        </div>
+
+        {/* Tab-style Role Selector */}
+        <div className="role-tabs" style={{ gridTemplateColumns: '1fr 1fr' }}>
+          {['student', 'admin'].map((role) => (
+            <div
+              key={role}
+              className={`role-tab ${selectedRole === role ? 'active' : ''}`}
+              onClick={() => {
+                setSelectedRole(role)
+                setError('')
+              }}
+            >
+              {role.charAt(0).toUpperCase() + role.slice(1)}
+            </div>
+          ))}
         </div>
 
         <form onSubmit={handleSubmit} autoComplete="off">
           <div className="form-group">
-            <label>Username</label>
+            <label>Username / Email</label>
             <input
               value={form.username}
               onChange={(e) => setForm({ ...form, username: e.target.value })}
-              placeholder="Enter your username"
+              placeholder={`Enter your ${selectedRole} username`}
               autoComplete="off"
               required
               autoFocus
             />
           </div>
-          <div className="form-group">
+          <div className="form-group" style={{ marginBottom: '1.5rem' }}>
             <label>Password</label>
             <input
               type="password"
@@ -60,21 +87,21 @@ export default function Login() {
             />
           </div>
 
-          {error && <p className="error-msg">{error}</p>}
+          {error && <p className="error-msg" style={{ textAlign: 'center' }}>{error}</p>}
 
-          <button
-            className="btn-primary"
-            type="submit"
-            disabled={loading}
-            style={{ width: '100%', marginTop: '1.25rem', padding: '0.85rem', fontSize: '1rem' }}
-          >
-            {loading ? 'Signing in...' : 'Sign In →'}
-          </button>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1.5rem' }}>
+            <button className="btn-outline" type="button" onClick={() => setForm({ username: '', password: '' })} style={{ width: '100%' }}>
+              Cancel
+            </button>
+            <button className="btn-primary" type="submit" disabled={loading} style={{ width: '100%' }}>
+              {loading ? 'Signing in...' : 'Login'}
+            </button>
+          </div>
         </form>
 
         <p style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.88rem', color: 'var(--muted)' }}>
           No account?{' '}
-          <Link to="/signup" style={{ color: 'var(--primary-light)', fontWeight: 600 }}>
+          <Link to="/signup" style={{ color: 'var(--primary)', fontWeight: 700 }}>
             Create one
           </Link>
         </p>

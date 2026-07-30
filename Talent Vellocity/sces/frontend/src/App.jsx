@@ -4,6 +4,7 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import ProfileSetup from './pages/ProfileSetup'
 import MyProfile from './pages/MyProfile'
+import ProjectAnalysis from './pages/ProjectAnalysis'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminStudentDetail from './pages/AdminStudentDetail'
 
@@ -21,6 +22,7 @@ function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/profile-setup" element={<PrivateRoute><ProfileSetup /></PrivateRoute>} />
           <Route path="/my-profile" element={<PrivateRoute><MyProfile /></PrivateRoute>} />
+          <Route path="/project-analysis" element={<PrivateRoute><ProjectAnalysis /></PrivateRoute>} />
           <Route path="/admin/dashboard" element={<PrivateRoute><AdminDashboard /></PrivateRoute>} />
           <Route path="/admin/students/:id" element={<PrivateRoute><AdminStudentDetail /></PrivateRoute>} />
           <Route path="/" element={<Navigate to="/login" />} />
